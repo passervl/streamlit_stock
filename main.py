@@ -1,4 +1,9 @@
-!pip install yfinance ta-lib matplotlib streamlit
+import subprocess
+
+# Specify the package name you want to install
+package_name = 'yfinance ta-lib matplotlib streamlit'
+# Call pip install command using subprocess
+subprocess.check_call(["pip", "install", package_name])
 
 from datetime import datetime
 import os
