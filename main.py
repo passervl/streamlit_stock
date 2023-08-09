@@ -1,34 +1,10 @@
 from datetime import datetime
-import numpy as np
+import os
 import pandas as pd
 import yfinance as yf
 import talib as ta
 import matplotlib.pyplot as plt
 import streamlit as st
-
-
-# def plot_data(type_choices, ticker):
-    
-#     dt = get_data(ticker)
-#     fig, axs = plt.subplots(2,1, gridspec_kw={"height_ratios": [3,1]}, figsize=(10,6))
-#     axs[0].plot(dt['Close'])
-#     for item in type_choices:
-#         type, window = item[0], item[1]
-#         type
-#         window
-#         dt = define_data(dt, type, window)
-#         if type == 'RSI':
-#             axs[1].axhline(y=70, color='r', linestyle="--")
-#             axs[1].axhline(y=30, color='g', linestyle="--")
-#             axs[1].axhline(y=50, color='y', linestyle="--")
-#             axs[1].plot(dt['RSI'], color='orange')
-#         else:
-#             axs[0].plot(dt[f'{type}{window}'])
-    
-#     axs[0].grid(alpha=0.5)
-#     plt.savefig('data.png')
-#     return dt.head()
-
 # Asking Container
 class Choice():
     def __init__(self,ticker):
@@ -54,7 +30,6 @@ class Choice():
     def plot_data(self):
         dt =self.get_calculator()
         fig, axs = plt.subplots(2,1, gridspec_kw={"height_ratios": [3,1]}, figsize=(10,6))
-        axs[0].plot(dt['Close'])
         for item in type_choices:
             type, window = item['type'], item['window']
             if type == 'RSI':
@@ -65,45 +40,62 @@ class Choice():
             else:
                 axs[0].plot(dt[f'{type}_{window}'])
     
+        axs[0].plot(dt['Close'])
         axs[0].grid(alpha=0.5)
         plt.savefig('data.png')
         return dt.head()
 
     def show(self):
-        self.get_calculator()
-        return self.dt
+        return pd.DataFrame(self.dt)
 
 def create_data(ticker):
     df = Choice(ticker)
     df.plot_data()
-    data_container = st.container()
-    data_container.title(f"Data for {ticker} from {start} to {end}")
-    data_container.image('data.png')
-    data_container.dataframe(df.show())
+    return df.show()
 
-st.title("Streamlit Application")
+def init_app():
+    try:
+        os.remove('data.csv')
+        os.remove('data.png')
+    except:
+        pass
+
+st.title("Stock Information Application")
 st.text("Hello Passer")
+# Choices Container
 choices = st.container()
 ticker = choices.text_input('Select Ticker:', value='MSFT')
-start = choices.date_input("From:", value=datetime(2020,1,1))
-end = choices.date_input("To:", value=datetime.now())
-types = choices.multiselect('Select Signal',['EMA','SMA', 'LINEARREG', 'RSI', 'MACD'], default=['RSI'])
-
+types = choices.multiselect('Select Signal',['TRIMA','EMA', 'MACD', 'LINEARREG', 'RSI','SMA'], default=['RSI'])
 
 type_choices=[]
 for type in types:
-    if type in ['EMA','SMA', 'LINEARREG', 'MACD']:
+    if type in ['TRIMA','EMA','SMA', 'LINEARREG', 'MACD']:
         window = int(choices.text_input(f"Window number for {type}:", value=10))
         type_choices.append({'type': type, 'window':window})
     else:
         type_choices.append({'type': type, 'window':None})
 
-st.button('Submit', key='submit', on_click=create_data(ticker))
+col1, col2 = choices.columns(2)
+start = col1.date_input("From:", value=datetime(2020,1,1))
+end = col2.date_input("To:", value=datetime.now())
+btn = col1.button('Submit')
+clear = col2.button('Clear')
 
-# if __name__ == '__main__':
-#     try:
-#         choice_dt = Choice(ticker)
-#         st.text(f'Ticker {ticker} from {start} to {end}')
-#         df = choice_dt.plot_data()
-#     except Exception as e:
-#         st.text(e)
+# Data Container
+
+if __name__ == '__main__':
+    try:
+        data_container = st.container()
+        if btn: 
+            data = create_data(ticker)
+            data.to_csv('data.csv')
+        elif clear:
+            init_app()
+        else:
+            pass
+        if os.path.exists('data.csv'):
+            data_container.title(f"Data for {ticker} from {start} to {end}")
+            data_container.image('data.png')
+            data_container.write(pd.read_csv('data.csv'))
+    except Exception as e:
+        st.text(e)
