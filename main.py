@@ -1,3 +1,5 @@
+!pip install yfinance ta-lib matplotlib streamlit
+
 from datetime import datetime
 import os
 import pandas as pd
